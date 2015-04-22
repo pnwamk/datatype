@@ -33,7 +33,7 @@
      (with-syntax ([result (parse-particular-type-case
                             (syntax/loc #'orig-stx #'orig-stx)
                             #'(cases ...)
-                            #'arg-stx
+                            #'(ann arg-stx Expr)
                             #'Expr?
                             (hash 'Var (list 1 #'Var?) 
                                   'Lambda (list 2 #'Lambda?) 
