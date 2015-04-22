@@ -1,12 +1,10 @@
 #lang typed/racket
 
-(require "a.rkt")
+(require "example-type.rkt")
 
 (: foo (Expr -> Symbol))
 (define (foo e)
-  (Exp-ADT-type-case e
-    [(Var x z) => x]
-    [(Lambda y b) => y]
-    ;[(App rator rand) => 'app]
-    [else => 'foo]))
+  (type-case Expr e
+    [(Var x) => x]
+    [(Lambda y b) => y]))
 

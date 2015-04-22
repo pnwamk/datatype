@@ -1,10 +1,12 @@
 #lang typed/racket
 
-(require (for-syntax "adt.rkt"))
-(require "adt.rkt")
+(require (for-template "type-case.rkt")
+         (for-syntax "type-case.rkt")
+         "type-case.rkt")
 
 (provide (all-defined-out)
-         type-case)
+         type-case
+         Expr-ADT-type-case)
 
 #|
 (define-datatype Exp
@@ -25,12 +27,20 @@
 (struct Lambda Expr ([x : Symbol] [b : Expr]) #:transparent)
 (struct App Expr ([rator : Expr] [rand : Expr]) #:transparent)
 
-(define-syntax (Exp-ADT-type-case stx)
+(define-syntax (Expr-ADT-type-case stx)
   (syntax-case stx ()
-    [(_ arg-stx cases ...)
-     (with-syntax ([result (parse-particular-type-case
-                            stx
-                            (syntax/loc stx (cases ...))
+    [(_ orig-stx arg-stx cases ...)
+     (parse-particular-type-case
+      #'orig-stx
+      #'(cases ...)
+      #'arg-stx
+      #'Expr?
+      (hash 'Var (list 1 #'Var?) 
+            'Lambda (list 2 #'Lambda?) 
+            'App (list 2 #'App?)))
+     #;(with-syntax ([result (parse-particular-type-case
+                            #'orig-stx
+                            #'(cases ...)
                             #'arg-stx
                             #'Expr?
                             (hash 'Var (list 1 #'Var?) 

@@ -7,8 +7,7 @@
          (for-syntax racket/base
                      syntax/parse))
 
-(provide (all-defined-out)
-         type-case)
+(provide (all-defined-out))
 
 
 ;;************* parse-single-case helpers *************
@@ -59,7 +58,7 @@
     [((~datum else) =>)
      (raise-syntax-error 'type-case 
                          "invalid else case, missing expressions on rhs of =>\n"
-                         #'stx)]
+                         stx)]
     [((case-id:id xs:id ...) (~datum =>) exp exps ...)
      ;; parse out some data
      (define case-name (syntax->datum #'case-id))
@@ -87,8 +86,8 @@
     [((case-id:id xs:id ...) =>)
      (raise-syntax-error 'type-case 
                          "invalid case, missing expressions on rhs of =>\n"
-                         #'stx)]
-    [,e (raise-syntax-error 'type-case 
+                         stx)]
+    [e (raise-syntax-error 'type-case 
                             "invalid case expression\n"
                             #'e)]))
 
@@ -122,16 +121,15 @@
   
   ;; determine unique vs duplicate type cases
   (define-values (unique-variants duplicates)
-    (for/fold ([uniqs (mutable-seteqv)]
-               [dups (mutable-seteqv)])
+    (for/fold ([uniqs (seteqv)]
+               [dups (seteqv)])
               ([var (in-list used-variants)])
       (cond
         [(or (set-member? uniqs var)
              (set-member? dups var))
-         (values uniqs (set-add! dups var))]
+         (values uniqs (set-add dups var))]
         [else
-         (set-add! uniqs var)
-         (values uniqs dups)])))
+         (values (set-add uniqs var) dups)])))
 
   ;; determine if all cases are covered, and which if any
   ;; were missed
@@ -144,32 +142,33 @@
              (set-member? duplicates case))
          (values all-cases-covered? missed-cases)]
         [else (values #f (cons case missed-cases))])))
+  
   ;; report errors based on all of these facts
   (cond
     ;; duplicates?
     [(not (set-empty? duplicates))
      (raise-syntax-error 'type-case 
-                         (format "duplicate cases found:\n~a\n"
+                         (format "duplicate case(s) found:\n~a\n"
                                  (set->list duplicates))
                          stx)]
     ;; missing a case?
     [(and (= else-count 0)
           (not all-cases-covered?))
      (raise-syntax-error 'type-case 
-                         (format "missing cases for the following:\n~a\n"
+                         (format "missing case(s) for the following:\n~a\n"
                                  missed-cases)
                          stx)]
     ;; unneeded else (i.e. cases all already covered)?
     [(and (> else-count 0)
           all-cases-covered?)
      (raise-syntax-error 'type-case 
-                         "unreachable else cases are not allowed\n"
+                         "unreachable 'else' cases are not allowed\n"
                          stx)]
     ;; too many elses?
     [(> else-count 1)
      (raise-syntax-error 'type-case 
                          "there are more than 1 else cases\n"
-                         stx)]
+                         #'stx)]
     ;; else case is not the last case?
     [(and (= else-count 1)
           (not (else-case? (last case-exps))))
@@ -184,18 +183,18 @@
 ;; insert else when non provided as error (should be unreachable??)
 ;; disallow duplicate cases
 
-(define (parse-particular-type-case stx case-stx arg-stx arg-pred type-case-info)
+(define (parse-particular-type-case orig-stx case-stx arg-stx arg-pred type-case-info)
   (syntax-parse case-stx
     [()
      (raise-syntax-error 'type-case 
                          "cannot contain zero cases"
-                         stx)]
+                         orig-stx)]
     
     [(cases:expr ...)
      (define case-exps (syntax->list #'(cases ...)))
 
      ;; check coverage of cases and the like
-     (validate-case-coverage case-exps type-case-info stx)
+     (validate-case-coverage case-exps type-case-info orig-stx)
 
      (define arg-let-id (datum->syntax arg-stx (gensym 'adt)))
      ;; parse each case
@@ -214,12 +213,11 @@
            #`(let ([#,arg-let-id #,arg-stx])
                (cond
                  cases ...
-                 [else (error 'type-case "internal type-case error: all cases missed!" #'stx)]))))]))
+                 [else (error 'type-case "internal type-case error: all cases missed!" #,orig-stx)]))))]))
 ;;**************** type-case helpers *******************
 (define-for-syntax (extend-id id-stx ext-str)
-  (datum->syntax id-stx
-                 (string->symbol (string-append (symbol->string (syntax->datum id-stx))
-                                                ext-str))))
+  (string->symbol (string-append (symbol->string (syntax->datum id-stx))
+                                                ext-str)))
 
 ;;**************** type-case *******************
 ;; parses a usage of type-case, expands
@@ -227,6 +225,6 @@
 (define-syntax (type-case stx)
   (syntax-parse stx
     [(_ type-stx:id arg-stx cases ...)
-     (with-syntax ([spec-case (extend-id #'type-stx
-                                         "-ADT-type-case")])
-       #'(spec-case arg-stx cases ...))]))
+     (define id (extend-id #'type-stx "-ADT-type-case"))
+     (with-syntax ([spec-case (datum->syntax stx id)])
+       #`(spec-case #,stx arg-stx cases ...))]))
