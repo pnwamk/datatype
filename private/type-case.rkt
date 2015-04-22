@@ -224,6 +224,6 @@
 (define-syntax (type-case stx)
   (syntax-parse stx
     [(_ type-stx:id arg-stx cases ...)
-     (define id (extend-id #'type-stx "-ADT-type-case"))
+     (define id (extend-id #'type-stx "-specific-ADT-type-case"))
      (with-syntax ([spec-case (datum->syntax stx id)])
        #`(spec-case #,stx arg-stx cases ...))]))

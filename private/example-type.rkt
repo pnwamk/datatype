@@ -5,14 +5,13 @@
          "type-case.rkt")
 
 (provide (all-defined-out)
-         type-case
-         Expr-ADT-type-case)
+         type-case)
 
 #|
 (define-datatype Exp
-  [Var Symbol]
-  [Lambda Symbol Exp]
-  [App Exp Exp])
+  [Var (Symbol)]
+  [Lambda (Symbol Exp)]
+  [App (Exp Exp)])
 |#
 
 
@@ -27,26 +26,16 @@
 (struct Lambda Expr ([x : Symbol] [b : Expr]) #:transparent)
 (struct App Expr ([rator : Expr] [rand : Expr]) #:transparent)
 
-(define-syntax (Expr-ADT-type-case stx)
+(define-syntax (Expr-specific-ADT-type-case stx)
+  (define type-info-hash
+    (hash 'Var (list 1 #'Var?) 
+          'Lambda (list 2 #'Lambda?) 
+          'App (list 2 #'App?)))
   (syntax-case stx ()
     [(_ orig-stx arg-stx cases ...)
-     (with-syntax ([result (parse-particular-type-case
-                            (syntax/loc #'orig-stx #'orig-stx)
-                            #'(cases ...)
-                            #'(ann arg-stx Expr)
-                            #'Expr?
-                            (hash 'Var (list 1 #'Var?) 
-                                  'Lambda (list 2 #'Lambda?) 
-                                  'App (list 2 #'App?)))])
-       #'result)]))
-
-#|
-(parse-particular-type-case
-      stx
+     (parse-particular-type-case
+      (syntax/loc #'orig-stx #'orig-stx)
       #'(cases ...)
-      #'arg-stx
+      #'(ann arg-stx Expr)
       #'Expr?
-      (hash 'Var (list 1 #'Var?) 
-            'Lambda (list 2 #'Lambda?) 
-            'App (list 2 #'App?)))
-|#
+      type-info-hash)]))
