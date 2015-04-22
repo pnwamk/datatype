@@ -30,16 +30,8 @@
 (define-syntax (Expr-ADT-type-case stx)
   (syntax-case stx ()
     [(_ orig-stx arg-stx cases ...)
-     (parse-particular-type-case
-      #'orig-stx
-      #'(cases ...)
-      #'arg-stx
-      #'Expr?
-      (hash 'Var (list 1 #'Var?) 
-            'Lambda (list 2 #'Lambda?) 
-            'App (list 2 #'App?)))
-     #;(with-syntax ([result (parse-particular-type-case
-                            #'orig-stx
+     (with-syntax ([result (parse-particular-type-case
+                            (syntax/loc #'orig-stx #'orig-stx)
                             #'(cases ...)
                             #'arg-stx
                             #'Expr?
@@ -47,3 +39,14 @@
                                   'Lambda (list 2 #'Lambda?) 
                                   'App (list 2 #'App?)))])
        #'result)]))
+
+#|
+(parse-particular-type-case
+      stx
+      #'(cases ...)
+      #'arg-stx
+      #'Expr?
+      (hash 'Var (list 1 #'Var?) 
+            'Lambda (list 2 #'Lambda?) 
+            'App (list 2 #'App?)))
+|#

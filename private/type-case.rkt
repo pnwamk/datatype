@@ -103,7 +103,7 @@
     [e #f]))
 
 (define (validate-case-coverage case-exps type-case-info stx)
-     
+
   ;; case-name
   ;; what is the id at the head of this case?
   (define (case-name stx)
@@ -118,7 +118,7 @@
 
   (define else-count (length else-cases))
   (define used-variants (map case-name type-cases))
-  
+
   ;; determine unique vs duplicate type cases
   (define-values (unique-variants duplicates)
     (for/fold ([uniqs (seteqv)]
@@ -142,7 +142,6 @@
              (set-member? duplicates case))
          (values all-cases-covered? missed-cases)]
         [else (values #f (cons case missed-cases))])))
-  
   ;; report errors based on all of these facts
   (cond
     ;; duplicates?
