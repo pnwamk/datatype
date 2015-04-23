@@ -1,5 +1,5 @@
 # dataype
-(Somewhat) Algebraic Data Types for Racket!
+### Algebraic(-like) Data Types for Racket!
 
 (Well... just Typed Racket at the moment...)
 
