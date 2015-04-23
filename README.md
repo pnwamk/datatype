@@ -1,28 +1,41 @@
 # dataype
-(Somewhat) Algebraic Data Types for Racket!
+### Algebraic(-like) Data Types for Racket!
 
 (Well... just Typed Racket at the moment...)
 
+Big thanks to Andre Kuhlenschmidt (https://github.com/akuhlens) for patiently helping me work out the macro details!
+
+This package should not yet be considered 'stable' -- I just finished the first implementation on 23 April and if I see something that needs fixed I may break backwards compatibility for the sake of making the feature better/correct.
+
+### Installation
++ 'raco pkg install datatype' from the terminal
++ or via the package manager in Dr Racket
+
+Bug reports welcome!
+
 ### Goals
 
-1. Construct a datatype similar to those found in ML/Haskell.
+1. Construct a datatype similar to those found in ML/Haskell (i.e. **algebraic datatypes**)
 2. Highly prefer using a match/case-like construct instead of 
-more traditional type-predicates + accessors.
-3. Do not allow the type to be extended.
+more traditional type-predicates + accessors, and provide **static
+verification** of case coverage (explicitly or with
+an else)
+3. Users **cannot extend** these **types** outside of their initial declaration.
 
 ### Example
 
 Defining a new datatype:
 ```racket
-(define-datatype Exp
-  [Var Symbol]
-  [Lambda Symbol Exp]
-  [App Exp Exp])
+(require datatype)
+
+(define-datatype Expr
+  [Var (Symbol)]
+  [Lambda (Symbol Expr)]
+  [App (Expr Expr)])
 ```
 
 Using a type-case with a clause for each variant:
 ```racket
-
 (: foo (Expr -> Symbol))
 (define (foo e)
   (type-case Expr e
@@ -34,8 +47,8 @@ Using a type-case with a clause for each variant:
 Using a type-case with an else:
 
 ```racket
-(: foo (Expr -> Symbol))
-(define (foo e)
+(: bar (Expr -> Symbol))
+(define (bar e)
   (type-case Expr e
     [(Var x) => x]
     [(Lambda y b) => y]
@@ -57,9 +70,9 @@ The example datatype expands roughly into this:
 (struct App ([ν : Expr] [ν : Expr]) #:transparent)
 ```
 
-This datatype defines three struct types which all inherit from the Exp struct.
+This datatype defines three struct types which all inherit from the Expr struct.
 
-Exp structs (i.e. the empty parent class) cannot be created or extended (either will result in a run-time error when an offending instance is created).
+Expr structs (i.e. the empty parent class) cannot be created or extended (either will result in a run-time error when an offending instance is created).
 
 The children structs (Var, Lambda, and App) cannot be extended (results in a run-time error when an offending instance is created).
 
