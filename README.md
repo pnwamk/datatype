@@ -15,10 +15,12 @@ Bug reports welcome!
 
 ### Goals
 
-1. Construct a datatype similar to those found in ML/Haskell.
+1. Construct a datatype similar to those found in ML/Haskell (i.e. **algebraic datatypes**)
 2. Highly prefer using a match/case-like construct instead of 
-more traditional type-predicates + accessors.
-3. Do not allow the type to be extended.
+more traditional type-predicates + accessors, and provide **static
+verification** of case coverage (explicitly or with
+an else)
+3. Users **cannot extend** these **types** outside of their initial declaration.
 
 ### Example
 
