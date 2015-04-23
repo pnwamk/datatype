@@ -68,9 +68,9 @@ The example datatype expands roughly into this:
 (struct App ([ν : Expr] [ν : Expr]) #:transparent)
 ```
 
-This datatype defines three struct types which all inherit from the Exp struct.
+This datatype defines three struct types which all inherit from the Expr struct.
 
-Exp structs (i.e. the empty parent class) cannot be created or extended (either will result in a run-time error when an offending instance is created).
+Expr structs (i.e. the empty parent class) cannot be created or extended (either will result in a run-time error when an offending instance is created).
 
 The children structs (Var, Lambda, and App) cannot be extended (results in a run-time error when an offending instance is created).
 
