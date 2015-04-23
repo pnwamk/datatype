@@ -5,6 +5,8 @@
 
 Big thanks to Andre Kuhlenschmidt (https://github.com/akuhlens) for patiently helping me work out the macro details!
 
+This package should not yet be considered 'stable' -- I just finished the first implementation on 23 April and if I see something that needs fixed I may break backwards compatibility for the sake of making the feature better/correct.
+
 ### Installation
 + 'raco pkg install datatype' from the terminal
 + or via the package manager in Dr Racket
