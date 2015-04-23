@@ -7,7 +7,7 @@
          (for-syntax racket/base
                      syntax/parse))
 
-(provide (all-defined-out))
+(provide type-case parse-particular-type-case)
 
 
 ;;************* parse-single-case helpers *************
@@ -176,11 +176,6 @@
                          stx)]))
 ;;**************** parse-particular-type-case *******************
 ;; builds a type case for a specific datatype
-
-;; TODO
-;; ensure all cases covered somehow
-;; insert else when non provided as error (should be unreachable??)
-;; disallow duplicate cases
 
 (define (parse-particular-type-case orig-stx case-stx arg-stx arg-pred type-case-info)
   (syntax-parse case-stx

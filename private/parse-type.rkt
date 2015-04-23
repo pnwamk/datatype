@@ -1,11 +1,19 @@
-#lang racket/base
+#lang typed/racket/base
 
-(require (for-syntax racket/base
+(require "type-case.rkt"
+         (for-syntax typed/racket/base
                      syntax/parse
-                     unstable/sequence
-                     racket/list)
-         (for-template racket/base
-                       syntax/parse))
+                     racket/list
+                     "type-case.rkt")
+         (for-template typed/racket/base
+                       syntax/parse
+                       "type-case.rkt"))
+
+
+
+(provide (all-defined-out)
+         type-case
+         struct:)
 
 #|
 (define-datatype Exp
@@ -25,8 +33,8 @@
   (for ([var-id (in-list var-ids)])
     (when (identifier-binding var-id)
       (raise-syntax-error 'define-datatype 
-                          "variant type name already bound"
-                          var-id)))
+                          (format "variant type ~a already bound" var-id)
+                          class-id)))
   
   ;; verify type-name not found as a variant name
   (for ([var-sym (in-list var-symbols)]
@@ -38,20 +46,20 @@
   ;; check for duplicate variant-type names
   (for ([var-sym (in-list var-symbols)]
         [var-id (in-list var-ids)])
-    (when (> (count var-sym var-symbols) 1)
+    (when (> (count (λ (name) (eq? name var-sym)) var-symbols) 1)
       (raise-syntax-error 'define-datatype 
                           "duplicate variant names are not allowed"
                           var-id))))
 
 (define-for-syntax (build-class-guard class-symbol var-symbols)
-       #`(λ (i)
-           (when (eq? #,class-symbol i)
-             (error #,class-symbol
-                    "cannot construct base of a datatype ~a"
-                    i))
-           (unless (memq i #,var-symbols)
-             (error #,class-symbol "cannot extend an algebraic data type\noffending type: ~a" i))
-           (values)))
+  #`(λ (i)
+      (when (eq? (quote #,class-symbol) i)
+        (error (quote #,class-symbol)
+               "cannot construct base of a datatype ~a"
+               i))
+      (unless (memq i (quote #,var-symbols))
+        (error (quote #,class-symbol) "cannot extend an algebraic data type\noffending type: ~a" i))
+      (values)))
 
 (define-for-syntax (build-varient-defs
                     var-ids
@@ -59,39 +67,32 @@
                     fields-list
                     class-id)
 
-  (define field-defs
-    (for/list ([var-id (in-list var-symbols)]
+  (define field-defss
+    (for/list ([var-sym (in-list var-symbols)]
                [type-list (in-list fields-list)])
       (for/list ([type (in-list type-list)])
-        #`[#,(gensym var-id) : #,type])))
+        #`[#,(gensym var-sym) : #,type])))
 
-  (for/list ([var-id (in-list var-ids)])
-    #`(struct #,var-id #,class-id #,field-defs #:transparent)))
+  (for/list ([var-id (in-list var-ids)]
+             [field-defs (in-list field-defss)])
+    #`(struct: #,var-id #,class-id #,field-defs #:transparent)))
 
 (define-for-syntax (extend-id id-stx ext-str)
   (datum->syntax id-stx
                  (string->symbol (string-append (symbol->string (syntax->datum id-stx))
                                                 ext-str))))
 
-(define (extend-id id-stx ext-str)
-  (datum->syntax id-stx
-              (string->symbol (string-append 
-                               (symbol->string (syntax->datum id-stx))
-                               ext-str))))
-
 (define-for-syntax (build-class-info-hash-def var-ids var-symbols fields-list stx)
-  #`(define type-info-hash
-      (for/hash ([var-id (in-list var-ids)]
-                 [var-sym (in-list var-symbols)]
-                 [field-count (in-list (map length fields-list))])
-        (values var-sym (list field-count #`#,(extend-id var-sym "?" var-id))))))
+  (for/hash ([var-id (in-list var-ids)]
+             [var-sym (in-list var-symbols)]
+             [field-count (in-list (map length fields-list))])
+    (values var-sym (list field-count #`#,(extend-id var-id "?")))))
 
 (define-for-syntax (build-specialized-type-case-def
                     type-case-id
                     class-id
                     class-info-hash-def)
   #`(define-syntax (#,type-case-id stx)
-      #,class-info-hash-def
       (syntax-case stx ()
         [(_ orig-stx arg-stx cases (... ...))
          (parse-particular-type-case
@@ -99,7 +100,7 @@
           #'(cases (... ...))
           #'(ann arg-stx class-id)
           #'#,(extend-id class-id "?")
-          type-info-hash)])))
+          #,class-info-hash-def)])))
 
 ;;******************* define-datatype **************
 
@@ -109,11 +110,8 @@
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
      ;; grab variant identifiers and related symbol
-     (define-values (var-ids var-symbols)
-       (for/lists (l1 l2)
-         ([var-id (in-syntax #'(variants ...))])
-         (values var-id (syntax->datum var-id))))
-     
+     (define var-ids (syntax->list #'(variants ...)))
+     (define var-symbols (map syntax->datum var-ids))
      (define fields-list (map syntax->list (syntax->list #'(fieldss ...))))
      
      ;; verify identifiers are correct
@@ -122,7 +120,7 @@
      (define class-guard (build-class-guard class-symbol var-symbols))
      
      ;; build parent struct definition
-     (define class-struct-def #`(struct #,class-symbol ()
+     (define class-struct-def #`(struct: class-id ()
                                   #:transparent
                                   #:guard #,class-guard))
      ;; build defs for each variant's struct
