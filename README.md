@@ -3,6 +3,8 @@
 
 (Well... just Typed Racket at the moment...)
 
+Big thanks to Andre Kuhlenschmidt (https://github.com/akuhlens) for patiently helping me work out the macro details!
+
 ### Installation
 + 'raco pkg install datatype' from the terminal
 + or via the package manager in Dr Racket
@@ -71,6 +73,3 @@ Exp structs (i.e. the empty parent class) cannot be created or extended (either 
 The children structs (Var, Lambda, and App) cannot be extended (results in a run-time error when an offending instance is created).
 
 The field names, ν, are all gensym'd to deter the usage of accessors functions.
-
-
-Big thanks to Andre Kuhlenschmidt (https://github.com/akuhlens) for patiently helping me debug the macros!
