@@ -67,52 +67,69 @@
                     fields-list
                     class-id)
 
+  #;(define class-id (datum->syntax (and (not (null? var-ids)) (car var-ids))
+                                  class-id))
   (define field-defss
     (for/list ([var-sym (in-list var-symbols)]
+               [var-id (in-list var-ids)]
                [type-list (in-list fields-list)])
       (for/list ([type (in-list type-list)])
-        #`[#,(gensym var-sym) : #,type])))
+        (datum->syntax var-id `[,(gensym var-sym) : ,type]))))
 
   (for/list ([var-id (in-list var-ids)]
              [field-defs (in-list field-defss)])
-    #`(struct: #,var-id #,class-id #,field-defs #:transparent)))
+    (printf "field-defs ~a\n" field-defs)
+    (with-syntax ([(fields ...) field-defs])
+      #`(struct: #,var-id #,class-id (fields ...) #:transparent))))
 
 (define-for-syntax (extend-id id-stx ext-str)
   (datum->syntax id-stx
                  (string->symbol (string-append (symbol->string (syntax->datum id-stx))
                                                 ext-str))))
 
-(define-for-syntax (build-class-info-hash-def var-ids var-symbols fields-list stx)
-  (for/hash ([var-id (in-list var-ids)]
-             [var-sym (in-list var-symbols)]
-             [field-count (in-list (map length fields-list))])
-    (values var-sym (list field-count #`#,(extend-id var-id "?")))))
+(define (extend-id [id-stx : (Syntaxof Any)] [ext-str : String])
+  (datum->syntax id-stx
+                 (string->symbol (string-append (symbol->string (cast (syntax->datum id-stx) Symbol))
+                                                ext-str))))
+
+(define-for-syntax (build-class-info-hash-def var-ids var-symbols fields-list)
+  (with-syntax ([(var-idents ...) var-ids]
+                [(var-syms ...) var-symbols]
+                [(fields ...) fields-list])
+    #`(define type-info-hash
+      (for/hash ([var-id (in-list (var-idents ...))]
+                 [var-sym (in-list (var-syms ...))]
+                 [field-count (in-list (map length (fields ...)))])
+        (values var-sym (list field-count #`#,(extend-id var-sym "?" var-id)))))))
 
 (define-for-syntax (build-specialized-type-case-def
                     type-case-id
                     class-id
                     class-info-hash-def)
+  (define pred? (extend-id class-id "?"))
+  (define type-info-hash (datum->syntax class-info-hash-def 'type-info-hash))
   #`(define-syntax (#,type-case-id stx)
+      #,class-info-hash-def
       (syntax-case stx ()
         [(_ orig-stx arg-stx cases (... ...))
          (parse-particular-type-case
           (syntax/loc #'orig-stx #'orig-stx)
           #'(cases (... ...))
           #'(ann arg-stx class-id)
-          #'#,(extend-id class-id "?")
-          #,class-info-hash-def)])))
+          #'#,pred?
+          #,type-info-hash)])))
 
 ;;******************* define-datatype **************
 
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ class-id:id [variants:id fieldss] ...)
+    [(_ class-id:id [variants:id (fieldss:id ...)] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
      ;; grab variant identifiers and related symbol
      (define var-ids (syntax->list #'(variants ...)))
      (define var-symbols (map syntax->datum var-ids))
-     (define fields-list (map syntax->list (syntax->list #'(fieldss ...))))
+     (define fields-list (map syntax->list (syntax->list #'((fieldss ...) ...))))
      
      ;; verify identifiers are correct
      (validate-identifiers #'class-id class-symbol var-ids var-symbols)
@@ -129,7 +146,7 @@
 
      ;; build type-info-hash definition
      (define class-info-hash-def
-       (build-class-info-hash-def var-ids var-symbols fields-list stx))
+       (build-class-info-hash-def var-ids var-symbols fields-list))
 
      ;; define specialize name for this class's type-case
      (define type-case-id (extend-id #'class-id "-specific-ADT-type-case"))
