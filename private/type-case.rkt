@@ -37,7 +37,7 @@
      stx))
   
   ;; no-duplicates?
-  (define-values (binder-ids wildcards)
+  (define-values (wildcards binder-ids)
     (partition (λ (x) (eqv? '_ x)) (map syntax->datum ids)))
   (define unique-var-count (length (remove-duplicates binder-ids)))
   (unless (= expected-count (+ unique-var-count (length wildcards)))
