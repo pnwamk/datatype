@@ -77,3 +77,14 @@ Expr structs (i.e. the empty parent class) cannot be created or extended (either
 The children structs (Var, Lambda, and App) cannot be extended (results in a run-time error when an offending instance is created).
 
 The field names, ν, are all gensym'd to deter the usage of accessors functions.
+
+### Future work...?
+
+At the moment just the basics are implemented. It might be nice to also have:
+
+* Support in regular Racket! (this **will** happen, I'm busy at the moment =)
+* easy recursive typecasing on subelements (while *maintaining* statically verified coverage)
+* option to name struct arguments and generate accessors using those names
+* ability to typecase on multiple datatype values at once (a la Racket's match*)
+* Ability to add regular types to a datatype? (We would have to switch from struct inheritance to a macro-generated union type for datatypes using this approach...)
+* ... any suggestions
