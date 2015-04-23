@@ -7,6 +7,8 @@
 + 'raco pkg install datatype' from the terminal
 + or via the package manager in Dr Racket
 
+Bug reports welcome!
+
 ### Goals
 
 1. Construct a datatype similar to those found in ML/Haskell.
