@@ -3,6 +3,10 @@
 
 (Well... just Typed Racket at the moment...)
 
+### Installation
++ 'raco pkg install datatype' from the terminal
++ or via the package manager in Dr Racket
+
 ### Goals
 
 1. Construct a datatype similar to those found in ML/Haskell.
@@ -14,6 +18,8 @@ more traditional type-predicates + accessors.
 
 Defining a new datatype:
 ```racket
+(require datatype)
+
 (define-datatype Expr
   [Var (Symbol)]
   [Lambda (Symbol Expr)]
@@ -33,8 +39,8 @@ Using a type-case with a clause for each variant:
 Using a type-case with an else:
 
 ```racket
-(: foo (Expr -> Symbol))
-(define (foo e)
+(: bar (Expr -> Symbol))
+(define (bar e)
   (type-case Expr e
     [(Var x) => x]
     [(Lambda y b) => y]
