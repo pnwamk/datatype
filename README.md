@@ -14,15 +14,14 @@ more traditional type-predicates + accessors.
 
 Defining a new datatype:
 ```racket
-(define-datatype Exp
-  [Var Symbol]
-  [Lambda Symbol Exp]
-  [App Exp Exp])
+(define-datatype Expr
+  [Var (Symbol)]
+  [Lambda (Symbol Expr)]
+  [App (Expr Expr)])
 ```
 
 Using a type-case with a clause for each variant:
 ```racket
-
 (: foo (Expr -> Symbol))
 (define (foo e)
   (type-case Expr e
