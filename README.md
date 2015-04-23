@@ -40,8 +40,8 @@ Using a type-case with a clause for each variant:
 (define (foo e)
   (type-case Expr e
     [(Var x) => x]
-    [(Lambda y b) => y]
-    [(App rator rand) => 'app]))
+    [(Lambda y _) => y]
+    [(App _ _) => 'app]))
 ```
 
 Using a type-case with an else:
