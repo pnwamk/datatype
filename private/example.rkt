@@ -5,7 +5,7 @@
 (define-datatype Expr
   [Var (Symbol)]
   [Lambda (Symbol Expr)]
-  [App (Expr Expr)]) ;; don't error on empty list
+  [App (Expr Expr)])
 
 (: foo (Expr -> Symbol))
 (define (foo e)
