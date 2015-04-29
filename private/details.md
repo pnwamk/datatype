@@ -86,7 +86,7 @@ After discovering how to represent the ADT values, I moved on to
 building a set of macros which could take info about an ADT's definition
 and generate suport for matching on it's forms via a type-case:
 
-``racket
+```racket
 (: foo (Expr -> Symbol))
 (define (foo e)
   (type-case Expr e
