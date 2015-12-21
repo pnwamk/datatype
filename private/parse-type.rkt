@@ -65,7 +65,8 @@
                     var-ids
                     var-symbols
                     fields-list
-                    class-id)
+                    class-id
+                    type-param-ids)
 
   #;(define class-id (datum->syntax (and (not (null? var-ids)) (car var-ids))
                                   class-id))
@@ -79,7 +80,7 @@
   (for/list ([var-id (in-list var-ids)]
              [field-defs (in-list field-defss)])
     (with-syntax ([(fields ...) field-defs])
-      #`(struct: #,var-id #,class-id (fields ...) #:transparent))))
+      #`(struct: #,type-param-ids #,var-id #,class-id (fields ...) #:transparent))))
 
 (define-for-syntax (extend-id id-stx ext-str)
   (datum->syntax id-stx
@@ -122,9 +123,12 @@
 
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ class-id:id [variants:id fieldss] ...)
+    [(_ (class-id:id type-params:id ...) [variants:id fieldss] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
+     
+     (define type-param-ids (syntax->list #'(type-params ...)))
+     
      ;; grab variant identifiers and related symbol
      (define var-ids (syntax->list #'(variants ...)))
      (define var-symbols (map syntax->datum var-ids))
@@ -136,12 +140,12 @@
      (define class-guard (build-class-guard class-symbol var-symbols))
      
      ;; build parent struct definition
-     (define class-struct-def #`(struct: class-id ()
+     (define class-struct-def #`(struct: (type-params ...) class-id ()
                                   #:transparent
                                   #:guard #,class-guard))
      ;; build defs for each variant's struct
      (define variant-defs
-       (build-varient-defs var-ids var-symbols fields-list #'class-id))
+       (build-varient-defs var-ids var-symbols fields-list #'class-id type-param-ids))
 
      ;; build type-info-hash definition
      (define class-info-hash-def
