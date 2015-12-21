@@ -26,28 +26,28 @@
 
   ;; is the type name free?
   (when (identifier-binding class-id)
-    (raise-syntax-error 'define-datatype 
+    (raise-syntax-error 'define-datatype
                         "type name already bound"
                         class-id))
   ;; are all the variant type names free?
   (for ([var-id (in-list var-ids)])
     (when (identifier-binding var-id)
-      (raise-syntax-error 'define-datatype 
+      (raise-syntax-error 'define-datatype
                           (format "variant type ~a already bound" var-id)
                           class-id)))
-  
+
   ;; verify type-name not found as a variant name
   (for ([var-sym (in-list var-symbols)]
         [var-id (in-list var-ids)])
     (when (eq? class-symbol var-sym)
-      (raise-syntax-error 'define-datatype 
+      (raise-syntax-error 'define-datatype
                           "variant name cannot equal a type name"
                           var-id)))
   ;; check for duplicate variant-type names
   (for ([var-sym (in-list var-symbols)]
         [var-id (in-list var-ids)])
     (when (> (count (λ (name) (eq? name var-sym)) var-symbols) 1)
-      (raise-syntax-error 'define-datatype 
+      (raise-syntax-error 'define-datatype
                           "duplicate variant names are not allowed"
                           var-id))))
 
@@ -123,22 +123,66 @@
 
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ (class-id:id type-params:id ...) [variants:id fieldss] ...)
+    [(_ class-id:id [variants:id fieldss] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
-     
-     (define type-param-ids (syntax->list #'(type-params ...)))
-     
+
+     (define type-param-ids '())
+
      ;; grab variant identifiers and related symbol
      (define var-ids (syntax->list #'(variants ...)))
      (define var-symbols (map syntax->datum var-ids))
      (define fields-list (map syntax->list (syntax->list #'(fieldss ...))))
-     
+
      ;; verify identifiers are correct
      (validate-identifiers #'class-id class-symbol var-ids var-symbols)
      ;; build guard for parent type
      (define class-guard (build-class-guard class-symbol var-symbols))
-     
+
+     ;; build parent struct definition
+     (define class-struct-def #`(struct: class-id ()
+                                  #:transparent
+                                  #:guard #,class-guard))
+     ;; build defs for each variant's struct
+     (define variant-defs
+       (build-varient-defs var-ids var-symbols fields-list #'class-id type-param-ids))
+
+     ;; build type-info-hash definition
+     (define class-info-hash-def
+       (build-class-info-hash-def var-ids var-symbols fields-list))
+
+     ;; define specialize name for this class's type-case
+     (define type-case-id (extend-id #'class-id "-specific-ADT-type-case"))
+
+     ;; define specialized type-case constructor
+     (define specialized-type-case-def
+       (build-specialized-type-case-def
+        type-case-id
+        #'class-id
+        class-info-hash-def))
+
+     (with-syntax ([(var-defs ...)
+                    variant-defs])
+       #`(begin
+           #,class-struct-def
+           var-defs ...
+           #,specialized-type-case-def))]
+    [(_ (class-id:id type-params:id ...) [variants:id fieldss] ...)
+     ;; convert class-id to symbol
+     (define class-symbol (syntax->datum #'class-id))
+
+     (define type-param-ids (syntax->list #'(type-params ...)))
+
+     ;; grab variant identifiers and related symbol
+     (define var-ids (syntax->list #'(variants ...)))
+     (define var-symbols (map syntax->datum var-ids))
+     (define fields-list (map syntax->list (syntax->list #'(fieldss ...))))
+
+     ;; verify identifiers are correct
+     (validate-identifiers #'class-id class-symbol var-ids var-symbols)
+     ;; build guard for parent type
+     (define class-guard (build-class-guard class-symbol var-symbols))
+
      ;; build parent struct definition
      (define class-struct-def #`(struct: (type-params ...) class-id ()
                                   #:transparent
@@ -160,7 +204,7 @@
         type-case-id
         #'class-id
         class-info-hash-def))
-     
+
      (with-syntax ([(var-defs ...)
                     variant-defs])
        #`(begin
