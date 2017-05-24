@@ -82,7 +82,7 @@ The field names, ν, are all gensym'd to deter the usage of accessors functions.
 
 At the moment just the basics are implemented. It might be nice to also have:
 
-* Support in regular Racket! (this **will** happen, I'm busy at the moment =)
+* Support in regular Racket!
 * easy recursive typecasing on subelements (while *maintaining* statically verified coverage)
 * option to name struct arguments and generate accessors using those names
 * ability to typecase on multiple datatype values at once (a la Racket's match*)
