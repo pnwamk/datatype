@@ -4,14 +4,14 @@
 (define-type Int Integer)
 
 (define-datatype (Opt A)
-  [Some (A)]
-  [None ()])
+  [SOME (A)]
+  [NONE ()])
 
 (define (extract-int [x : (Opt Int)]) : Integer
   (Opt-case [#:inst Int]
    x
-   [(Some i) => i]
-   [(None) => -1]))
+   [(SOME i) => i]
+   [(NONE) => -1]))
 
 (define-datatype Expr
   [Var (Symbol)]
