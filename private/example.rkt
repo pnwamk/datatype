@@ -3,9 +3,9 @@
 (require "parse-type.rkt")
 
 (define-datatype Expr
-  [Var (Symbol)]
+  [Var ([n : Symbol])]
   [Lambda (Symbol Expr)]
-  [App (Expr Expr)])
+  [App (Expr (Boxof Expr))])
 
 (: foo (Expr -> Symbol))
 (define (foo e)
@@ -14,3 +14,5 @@
     [(Lambda y b) => y]
     [(App l r) => 'fool]))
 
+
+(Var-n (Var 'hello))

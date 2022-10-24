@@ -4,6 +4,8 @@
          (for-syntax typed/racket/base
                      syntax/parse
                      racket/list
+                     racket/function
+                     racket/syntax
                      "type-case.rkt")
          (for-template typed/racket/base
                        syntax/parse
@@ -72,9 +74,9 @@
   (define field-defss
     (for/list ([var-sym (in-list var-symbols)]
                [var-id (in-list var-ids)]
-               [type-list (in-list fields-list)])
-      (for/list ([type (in-list type-list)])
-        (datum->syntax var-id `[,(gensym var-sym) : ,type]))))
+               [fd-list (in-list fields-list)])
+      (for/list ([fd (in-list fd-list)])
+        (datum->syntax var-id `[,(car fd) : ,(cdr fd)]))))
 
   (for/list ([var-id (in-list var-ids)]
              [field-defs (in-list field-defss)])
@@ -120,16 +122,26 @@
 
 ;;******************* define-datatype **************
 
+(begin-for-syntax
+  (define-syntax-class (field-decl variant-name)
+    #:literals (:)
+    #:attributes (name type name+type)
+    (pattern (name:id : type:expr)
+             #:attr name+type (cons #'name #'type))
+    (pattern type:expr
+             #:attr name (format-id variant-name "~a" (gensym (syntax-e variant-name)))
+             #:attr name+type (cons #'name #'type))))
+
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ class-id:id [variants:id fieldss] ...)
+    [(_ class-id:id [variants:id ((~var fieldss (field-decl #'variants)) ...)] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
      ;; grab variant identifiers and related symbol
      (define var-ids (syntax->list #'(variants ...)))
      (define var-symbols (map syntax->datum var-ids))
-     (define fields-list (map syntax->list (syntax->list #'(fieldss ...))))
-     
+     (define fields-list (map syntax->list (syntax->list #'((fieldss.type ...) ...))))
+     (define field-name+type-lists (attribute fieldss.name+type))
      ;; verify identifiers are correct
      (validate-identifiers #'class-id class-symbol var-ids var-symbols)
      ;; build guard for parent type
@@ -141,7 +153,7 @@
                                   #:guard #,class-guard))
      ;; build defs for each variant's struct
      (define variant-defs
-       (build-varient-defs var-ids var-symbols fields-list #'class-id))
+       (build-varient-defs var-ids var-symbols field-name+type-lists #'class-id))
 
      ;; build type-info-hash definition
      (define class-info-hash-def
