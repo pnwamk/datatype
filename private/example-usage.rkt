@@ -5,7 +5,9 @@
 (: foo (Expr -> Symbol))
 (define (foo e)
   (type-case Expr e
-    [(Var x) => x]
+    [(Var x) x]
     [(Lambda y b) => y]
     [(App l r) => 'fool]))
 
+
+(foo (Var 'a))

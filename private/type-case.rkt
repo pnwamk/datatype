@@ -53,13 +53,13 @@
 
 (define (parse-single-case stx arg-stx type-case-info)
   (syntax-parse stx
-    [((~datum else) => exp exps ...)
+    [((~datum else) (~optional (~datum =>)) exp exps ...)
      #'[else exp exps ...]]
-    [((~datum else) =>)
+    [((~datum else) (~optional (~datum =>)))
      (raise-syntax-error 'type-case 
                          "invalid else case, missing expressions on rhs of =>\n"
                          stx)]
-    [((case-id:id xs:id ...) (~datum =>) exp exps ...)
+    [((case-id:id xs:id ...) (~optional (~datum =>)) exp exps ...)
      ;; parse out some data
      (define case-name (syntax->datum #'case-id))
      (define ids (syntax->list #'(xs ...)))
@@ -83,7 +83,7 @@
        #`[(case? #,arg-stx)
           (let (binding ...)
             exp exps ...)])]
-    [((case-id:id xs:id ...) =>)
+    [((case-id:id xs:id ...) (~optional (~datum =>)))
      (raise-syntax-error 'type-case 
                          "invalid case, missing expressions on rhs of =>\n"
                          stx)]
@@ -99,7 +99,7 @@
 ;; is this case an else?
 (define (else-case? stx)
   (syntax-parse stx
-    [((~datum else) (~datum =>) exprs:expr ...) #t]
+    [((~datum else) (~optional (~datum =>)) exprs:expr ...) #t]
     [e #f]))
 
 (define (validate-case-coverage case-exps type-case-info stx)
@@ -108,7 +108,7 @@
   ;; what is the id at the head of this case?
   (define (case-name stx)
     (syntax-parse stx
-      [((case-name:id x:id ...) (~datum =>) exps ...)
+      [((case-name:id x:id ...) (~optional (~datum =>)) exps ...)
        (syntax->datum #'case-name)]))
 
   ;; partition else vs normal cases, count them
