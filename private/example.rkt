@@ -16,3 +16,10 @@
 
 
 (Var-n (Var 'hello))
+
+
+(define-datatype AAAA
+  #:property prop:custom-write (lambda (me port mode)
+                                 (eprintf "10"))
+  [Hi ()])
+

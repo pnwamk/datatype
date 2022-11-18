@@ -132,9 +132,21 @@
              #:attr name (format-id variant-name "~a" (gensym (syntax-e variant-name)))
              #:attr name+type (cons #'name #'type))))
 
+(begin-for-syntax
+  (define-splicing-syntax-class class-properties
+    #:attributes ([val 1])
+    (pattern (~seq (~seq #:property pname:expr pval:expr) ...)
+             #:attr (val 1) (if (attribute pname)
+                                  (foldl (lambda (n v acc)
+                                           (append acc (list #'#:property n v)))
+                                         null
+                                         (attribute pname)
+                                         (attribute pval))
+                                  null))))
+
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ class-id:id [variants:id ((~var fieldss (field-decl #'variants)) ...)] ...)
+    [(_ class-id:id properties:class-properties [variants:id ((~var fieldss (field-decl #'variants)) ...)] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
      ;; grab variant identifiers and related symbol
@@ -146,9 +158,10 @@
      (validate-identifiers #'class-id class-symbol var-ids var-symbols)
      ;; build guard for parent type
      (define class-guard (build-class-guard class-symbol var-symbols))
-     
+
      ;; build parent struct definition
      (define class-struct-def #`(struct: class-id ()
+                                  properties.val ...
                                   #:transparent
                                   #:guard #,class-guard))
      ;; build defs for each variant's struct
