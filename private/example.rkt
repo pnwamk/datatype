@@ -23,3 +23,8 @@
                                  (eprintf "10"))
   [Hi ()])
 
+(define-datatype BBBB
+  [Why (Natural) #:property prop:custom-write (lambda (me port mode)
+                                                (displayln "me"))])
+
+(Why 10)

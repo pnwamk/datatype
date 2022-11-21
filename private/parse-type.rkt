@@ -67,7 +67,8 @@
                     var-ids
                     var-symbols
                     fields-list
-                    class-id)
+                    class-id
+                    properties-li)
 
   #;(define class-id (datum->syntax (and (not (null? var-ids)) (car var-ids))
                                   class-id))
@@ -79,9 +80,11 @@
         (datum->syntax var-id `[,(car fd) : ,(cdr fd)]))))
 
   (for/list ([var-id (in-list var-ids)]
-             [field-defs (in-list field-defss)])
+             [field-defs (in-list field-defss)]
+             [properties (in-list properties-li)])
     (with-syntax ([(fields ...) field-defs])
-      #`(struct: #,var-id #,class-id (fields ...) #:transparent))))
+      #`(struct: #,var-id #,class-id (fields ...) #:transparent
+          #,@properties))))
 
 (define-for-syntax (extend-id id-stx ext-str)
   (datum->syntax id-stx
@@ -133,7 +136,7 @@
              #:attr name+type (cons #'name #'type))))
 
 (begin-for-syntax
-  (define-splicing-syntax-class class-properties
+  (define-splicing-syntax-class struct-properties
     #:attributes ([val 1])
     (pattern (~seq (~seq #:property pname:expr pval:expr) ...)
              #:attr (val 1) (if (attribute pname)
@@ -146,7 +149,7 @@
 
 (define-syntax (define-datatype stx)
   (syntax-parse stx
-    [(_ class-id:id properties:class-properties [variants:id ((~var fieldss (field-decl #'variants)) ...)] ...)
+    [(_ class-id:id properties:struct-properties [variants:id ((~var fieldss (field-decl #'variants)) ...) variant-properties:struct-properties] ...)
      ;; convert class-id to symbol
      (define class-symbol (syntax->datum #'class-id))
      ;; grab variant identifiers and related symbol
@@ -166,7 +169,7 @@
                                   #:guard #,class-guard))
      ;; build defs for each variant's struct
      (define variant-defs
-       (build-varient-defs var-ids var-symbols field-name+type-lists #'class-id))
+       (build-varient-defs var-ids var-symbols field-name+type-lists #'class-id (syntax->list #'(variant-properties ...))))
 
      ;; build type-info-hash definition
      (define class-info-hash-def
